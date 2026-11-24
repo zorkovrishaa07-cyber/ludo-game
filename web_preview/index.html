@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#e94560">
+  <title>Ludo & Multi Casual Games Bundle - Playable Live Preview</title>
+  <style>
+    :root {
+      --bg-dark: #1a1a2e;
+      --card-dark: #16213e;
+      --accent-red: #e94560;
+      --accent-gold: #ffd700;
+      --ludo-red: #e53935;
+      --ludo-green: #43a047;
+      --ludo-yellow: #ffb300;
+      --ludo-blue: #1e88e5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: var(--bg-dark); color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    header {
+      background: var(--card-dark);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    header h1 { font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .btn-icon { background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
+    .btn-icon:hover { background: rgba(255,255,255,0.2); }
+
+    main { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+
+    /* Home View */
+    .view { width: 100%; max-width: 480px; display: none; flex-direction: column; gap: 14px; }
+    .view.active { display: flex; }
+
+    .hero-card {
+      background: linear-gradient(135deg, var(--accent-red), #0f3460);
+      padding: 18px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .hero-card h2 { font-size: 1.25rem; margin-bottom: 4px; }
+    .hero-card p { font-size: 0.85rem; color: rgba(255,255,255,0.8); }
+
+    .game-card {
+      background: var(--card-dark);
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .game-card-header { display: flex; align-items: center; gap: 12px; }
+    .game-badge {
+      width: 46px; height: 46px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #fff; font-weight: bold;
+    }
+    .game-actions { display: flex; gap: 10px; }
+    .btn-action {
+      flex: 1; padding: 10px 8px; border-radius: 10px; border: none;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.2s;
+    }
+    .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+    .btn-primary { background: var(--accent-red); color: #fff; }
+    .btn-primary:hover { filter: brightness(1.1); }
+
+    /* Board Containers */
+    .board-container {
+      width: 100%; max-width: 420px; aspect-ratio: 1/1;
+      background: #fff; border-radius: 14px; overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4); position: relative;
+    }
+
+    /* Ludo Board Canvas */
+    #ludoCanvas, #snakeCanvas { width: 100%; height: 100%; display: block; }
+
+    /* Tic Tac Toe Grid */
+    .ttt-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; width: 100%; height: 100%; padding: 8px; background: #0f3460;
+    }
+    .ttt-cell {
+      background: var(--card-dark); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem; font-weight: 900; cursor: pointer;
+    }
+    .ttt-cell.x { color: var(--accent-red); }
+    .ttt-cell.o { color: #00adb5; }
+    .ttt-cell.win { background: rgba(255,215,0,0.3); border: 2px solid var(--accent-gold); }
+
+    /* Turn Header & Dice Controls */
+    .game-header-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; background: var(--card-dark); padding: 10px 14px;
+      border-radius: 12px; font-weight: 600; font-size: 0.9rem;
+    }
+    .game-controls {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; padding: 10px;
+    }
+    .dice-btn {
+      width: 58px; height: 58px; background: #fff; border-radius: 12px;
+      border: 3px solid var(--accent-gold); display: flex; align-items: center;
+      justify-content: center; font-size: 1.8rem; font-weight: 900; color: #1a1a2e;
+      cursor: pointer; box-shadow: 0 4px 12px rgba(255,215,0,0.4);
+    }
+    .dice-btn.rolling { animation: roll 0.2s infinite; }
+    @keyframes roll { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* Bottom AdMob Banner */
+    .admob-banner {
+      background: #111a2e;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.7);
+    }
+    .admob-badge { background: #ffd700; color: #000; font-size: 0.65rem; font-weight: 800; padding: 2px 5px; border-radius: 4px; }
+
+    /* Modal Victory / Interstitial Ad Overlay */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      display: none; align-items: center; justify-content: center; z-index: 100;
+      padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background: var(--card-dark); border-radius: 20px; padding: 24px;
+      max-width: 360px; width: 100%; text-align: center; border: 2px solid var(--accent-gold);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    }
+    .modal-trophy { font-size: 3.5rem; margin-bottom: 10px; }
+
+    /* Interstitial Video Simulation Overlay */
+    .interstitial-overlay {
+      position: fixed; inset: 0; background: #000; z-index: 200;
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      color: #fff; text-align: center; padding: 20px;
+    }
+    .interstitial-overlay.active { display: flex; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🎲 <span>Ludo Multi Games</span></h1>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn-icon" id="installBtn" style="display:none; background: #e94560;" onclick="installApp()">📲 Install App</button>
+      <button class="btn-icon" id="soundBtn" onclick="toggleSound()">🔊 Sound</button>
+      <button class="btn-icon" id="homeBtn" onclick="showView('homeView')">🏠 Menu</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- 1. HOME VIEW -->
+    <div id="homeView" class="view active">
+      <div class="hero-card">
+        <h2>Multi-Board Games Suite</h2>
+        <p>Pass & Play Offline or Play vs Smart AI. With AdMob Banner & Match-End Interstitial Video Ads.</p>
+      </div>
+
+      <!-- Ludo Classic -->
+      <div class="game-card">
+        <div class="game-card-header">
+          <div class="game-badge" style="background: linear-gradient(135deg, #e53935, #c62828);">🎯</div>
+          <div>
+            <h3>Ludo Classic (4 Tokens)</h3>
+            <p style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Traditional 15x15 board with safe squares & home lane</p>
+          </div>
+        </div>
+        <div class="game-actions">
+          <button class="btn-action btn-secondary" onclick="startLudo(false, false)">👥 Pass & Play</button>
+          <button class="btn-action btn-primary" onclick="startLudo(true, false)">🤖 Vs Computer</button>
+        </div>
+      </div>
+
+      <!-- Ludo Quick Rush -->
+      <div class="game-card">
+        <div class="game-card-header">
+          <div class="game-badge" style="background: linear-gradient(135deg, #ff8f00, #ef6c00);">⚡</div>
+          <div>
+            <h3>Ludo Quick Rush (2 Tokens)</h3>
+            <p style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Fast-paced 5-minute intense match</p>
+          </div>
+        </div>
+        <div class="game-actions">
+          <button class="btn-action btn-secondary" onclick="startLudo(false, true)">👥 Pass & Play</button>
+          <button class="btn-action btn-primary" onclick="startLudo(true, true)">🤖 Vs Computer</button>
+        </div>
+      </div>
+
+      <!-- Snakes & Ladders -->
+      <div class="game-card">
+        <div class="game-card-header">
+          <div class="game-badge" style="background: linear-gradient(135deg, #2e7d32, #1b5e20);">🪜</div>
+          <div>
+            <h3>Snakes & Ladders</h3>
+            <p style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Classic 1-100 board with animated ladder climbing</p>
+          </div>
+        </div>
+        <div class="game-actions">
+          <button class="btn-action btn-secondary" onclick="startSnake(false)">👥 Pass & Play</button>
+          <button class="btn-action btn-primary" onclick="startSnake(true)">🤖 Vs Computer</button>
+        </div>
+      </div>
+
+      <!-- Tic-Tac-Toe -->
+      <div class="game-card">
+        <div class="game-card-header">
+          <div class="game-badge" style="background: linear-gradient(135deg, #00adb5, #393e46);">❌</div>
+          <div>
+            <h3>Tic-Tac-Toe</h3>
+            <p style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Quick 1-minute casual brain challenge</p>
+          </div>
+        </div>
+        <div class="game-actions">
+          <button class="btn-action btn-secondary" onclick="startTtt(false)">👥 Pass & Play</button>
+          <button class="btn-action btn-primary" onclick="startTtt(true)">🤖 Vs Computer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. LUDO GAME VIEW -->
+    <div id="ludoView" class="view">
+      <div class="game-header-bar">
+        <span id="ludoTurnText">Turn: Red Player</span>
+        <span id="ludoModeBadge" style="color: var(--accent-gold);">Classic</span>
+      </div>
+      <div class="board-container">
+        <canvas id="ludoCanvas" width="450" height="450"></canvas>
+      </div>
+      <div class="game-controls">
+        <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">
+          <div id="ludoStatusMsg">Tap dice to roll!</div>
+          <div style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">Roll 6 to unlock token from base</div>
+        </div>
+        <button id="ludoDiceBtn" class="dice-btn" onclick="onLudoDiceClick()">🎲</button>
+      </div>
+    </div>
+
+    <!-- 3. SNAKES & LADDERS VIEW -->
+    <div id="snakeView" class="view">
+      <div class="game-header-bar">
+        <span id="snakeTurnText">Turn: Player 1 (Pos: 0)</span>
+        <span style="color: var(--accent-gold);">1 to 100</span>
+      </div>
+      <div class="board-container">
+        <canvas id="snakeCanvas" width="450" height="450"></canvas>
+      </div>
+      <div class="game-controls">
+        <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">
+          <div id="snakeStatusMsg">Tap dice to roll!</div>
+          <div style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">Reach 100 exactly to win</div>
+        </div>
+        <button id="snakeDiceBtn" class="dice-btn" onclick="onSnakeDiceClick()">🎲</button>
+      </div>
+    </div>
+
+    <!-- 4. TIC-TAC-TOE VIEW -->
+    <div id="tttView" class="view">
+      <div class="game-header-bar">
+        <span id="tttTurnText">Turn: Player X</span>
+        <span id="tttScoreText" style="color: var(--accent-gold);">X: 0 | O: 0</span>
+      </div>
+      <div class="board-container">
+        <div class="ttt-grid" id="tttGrid"></div>
+      </div>
+      <div style="text-align: center; margin-top: 10px;">
+        <button class="btn-action btn-secondary" onclick="resetTttRound()">🔄 New Round</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Persistent Bottom Banner Ad (Google AdMob Simulation) -->
+  <div class="admob-banner">
+    <span class="admob-badge">TEST AD</span>
+    <span>Google AdMob Banner (ID: ca-app-pub-3940256099942544/6300978111)</span>
+  </div>
+
+  <!-- Victory Dialog -->
+  <div id="victoryModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-trophy">🏆</div>
+      <h2 style="color: var(--accent-gold); margin-bottom: 6px;">VICTORY!</h2>
+      <p id="victoryWinnerText" style="font-size: 1.1rem; font-weight: 700; margin-bottom: 18px;">Player Wins!</p>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-action btn-secondary" onclick="onVictoryClose('menu')">🏠 Main Menu</button>
+        <button class="btn-action btn-primary" onclick="onVictoryClose('restart')">🔄 Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Strict Ad Policy: Interstitial Video Simulation on Game End -->
+  <div id="interstitialModal" class="interstitial-overlay">
+    <div style="background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 8px; margin-bottom: 20px;">
+      <span class="admob-badge">TEST INTERSTITIAL VIDEO AD</span>
+    </div>
+    <div style="font-size: 3rem; margin-bottom: 10px;">🎬</div>
+    <h2>Google AdMob Interstitial Video</h2>
+    <p style="font-size: 0.85rem; color: rgba(255,255,255,0.7); max-width: 320px; margin-top: 6px;">
+      Ad Unit ID: ca-app-pub-3940256099942544/1033173712<br>
+      Strict Policy: Shown ONLY on Match-End Victory screen.
+    </p>
+    <div id="adTimer" style="margin-top: 20px; font-weight: bold; font-size: 1.1rem; color: var(--accent-gold);">
+      Closing in 3 seconds...
+    </div>
+  </div>
+
+  <script>
+    // Audio synthesis using Web Audio API (zero external assets needed)
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    function playBeep(freq, type = 'sine', duration = 0.1) {
+      if (!soundEnabled) return;
+      initAudio();
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch(e) {}
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('soundBtn').textContent = soundEnabled ? '🔊 Sound' : '🔇 Mute';
+      if (soundEnabled) playBeep(440);
+    }
+
+    // View Navigation
+    function showView(viewId) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+    }
+
+    // Modal & Match-End Ad Simulation
+    let postAdCallback = null;
+    function triggerVictory(winnerName, onFinish) {
+      playBeep(523, 'triangle', 0.2);
+      setTimeout(() => playBeep(659, 'triangle', 0.2), 150);
+      setTimeout(() => playBeep(784, 'triangle', 0.4), 300);
+
+      document.getElementById('victoryWinnerText').textContent = `${winnerName} Wins!`;
+      document.getElementById('victoryModal').classList.add('active');
+      postAdCallback = onFinish;
+    }
+
+    function onVictoryClose(targetAction) {
+      document.getElementById('victoryModal').classList.remove('active');
+      // STRICT POLICY: Interstitial video ad plays on match end
+      showInterstitialAd(() => {
+        if (targetAction === 'menu') showView('homeView');
+        if (postAdCallback) postAdCallback(targetAction);
+      });
+    }
+
+    function showInterstitialAd(onDone) {
+      const modal = document.getElementById('interstitialModal');
+      modal.classList.add('active');
+      let countdown = 3;
+      const timerEl = document.getElementById('adTimer');
+      timerEl.textContent = `Closing in ${countdown} seconds...`;
+
+      const interval = setInterval(() => {
+        countdown--;
+        if (countdown <= 0) {
+          clearInterval(interval);
+          modal.classList.remove('active');
+          if (onDone) onDone();
+        } else {
+          timerEl.textContent = `Closing in ${countdown} seconds...`;
+        }
+      }, 1000);
+    }
+
+    /* ========================================================
+       1. TIC-TAC-TOE ENGINE
+    ======================================================== */
+    let tttBoard = Array(9).fill('');
+    let tttTurn = 'X';
+    let tttVsAI = true;
+    let tttScores = { X: 0, O: 0 };
+    let tttGameOver = false;
+
+    function startTtt(vsAI) {
+      tttVsAI = vsAI;
+      tttScores = { X: 0, O: 0 };
+      resetTttRound();
+      showView('tttView');
+    }
+
+    function resetTttRound() {
+      tttBoard = Array(9).fill('');
+      tttTurn = 'X';
+      tttGameOver = false;
+      renderTtt();
+      document.getElementById('tttTurnText').textContent = "Turn: Player X";
+      document.getElementById('tttScoreText').textContent = `X: ${tttScores.X} | O: ${tttScores.O}`;
+    }
+
+    function renderTtt() {
+      const grid = document.getElementById('tttGrid');
+      grid.innerHTML = '';
+      tttBoard.forEach((val, i) => {
+        const cell = document.createElement('div');
+        cell.className = `ttt-cell ${val.toLowerCase()}`;
+        cell.textContent = val;
+        cell.onclick = () => onTttCellClick(i);
+        grid.appendChild(cell);
+      });
+    }
+
+    function onTttCellClick(i) {
+      if (tttBoard[i] !== '' || tttGameOver) return;
+      tttBoard[i] = tttTurn;
+      playBeep(tttTurn === 'X' ? 440 : 550);
+      renderTtt();
+
+      if (checkTttWinner()) return;
+
+      tttTurn = (tttTurn === 'X') ? 'O' : 'X';
+      document.getElementById('tttTurnText').textContent = `Turn: Player ${tttTurn}`;
+
+      if (tttVsAI && tttTurn === 'O' && !tttGameOver) {
+        document.getElementById('tttTurnText').textContent = "Bot is thinking...";
+        setTimeout(performTttAIMove, 450);
+      }
+    }
+
+    function performTttAIMove() {
+      if (tttGameOver) return;
+      // Winning move or block
+      const empty = tttBoard.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+      if (empty.length === 0) return;
+
+      // Smart center or random
+      let pick = empty.includes(4) ? 4 : empty[Math.floor(Math.random() * empty.length)];
+      onTttCellClick(pick);
+    }
+
+    function checkTttWinner() {
+      const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+      for (const [a, b, c] of wins) {
+        if (tttBoard[a] && tttBoard[a] === tttBoard[b] && tttBoard[a] === tttBoard[c]) {
+          tttGameOver = true;
+          tttScores[tttBoard[a]]++;
+          document.getElementById('tttScoreText').textContent = `X: ${tttScores.X} | O: ${tttScores.O}`;
+          triggerVictory(`Player ${tttBoard[a]}`, () => resetTttRound());
+          return true;
+        }
+      }
+      if (!tttBoard.includes('')) {
+        tttGameOver = true;
+        triggerVictory('Game Tied! Nobody', () => resetTttRound());
+        return true;
+      }
+      return false;
+    }
+
+    /* ========================================================
+       2. SNAKES & LADDERS ENGINE
+    ======================================================== */
+    let snakePlayers = [];
+    let snakeTurnIdx = 0;
+    let snakeVsAI = true;
+    let snakeRolling = false;
+
+    const SNAKES = { 98: 28, 95: 56, 92: 51, 83: 19, 73: 1, 69: 33, 64: 36, 59: 17, 52: 11, 48: 9, 44: 22 };
+    const LADDERS = { 4: 14, 8: 30, 21: 42, 28: 76, 36: 44, 51: 67, 71: 91, 80: 99 };
+
+    function startSnake(vsAI) {
+      snakeVsAI = vsAI;
+      snakePlayers = [
+        { name: 'Player 1', color: '#e53935', pos: 0, isAI: false },
+        { name: vsAI ? 'Computer Bot' : 'Player 2', color: '#1e88e5', pos: 0, isAI: vsAI }
+      ];
+      snakeTurnIdx = 0;
+      snakeRolling = false;
+      showView('snakeView');
+      drawSnakeBoard();
+      updateSnakeUI();
+    }
+
+    function updateSnakeUI() {
+      const p = snakePlayers[snakeTurnIdx];
+      document.getElementById('snakeTurnText').textContent = `Turn: ${p.name} (Square: ${p.pos}/100)`;
+    }
+
+    function drawSnakeBoard() {
+      const canvas = document.getElementById('snakeCanvas');
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      const cell = size / 10;
+
+      ctx.clearRect(0, 0, size, size);
+
+      // Checkered squares
+      const colors = ['#fff9c4', '#ffcdd2', '#c8e6c9', '#bbdefb'];
+      for (let sq = 1; sq <= 100; sq++) {
+        const { x, y } = getSnakeCoord(sq, cell);
+        ctx.fillStyle = colors[sq % colors.length];
+        ctx.fillRect(x - cell/2, y - cell/2, cell, cell);
+        ctx.strokeStyle = '#ccc';
+        ctx.strokeRect(x - cell/2, y - cell/2, cell, cell);
+
+        ctx.fillStyle = '#333';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText(sq, x - cell/2 + 3, y - cell/2 + 12);
+      }
+
+      // Draw Ladders
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#6d4c41';
+      for (const [start, end] of Object.entries(LADDERS)) {
+        const p1 = getSnakeCoord(Number(start), cell);
+        const p2 = getSnakeCoord(Number(end), cell);
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+
+      // Draw Snakes
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#2e7d32';
+      for (const [head, tail] of Object.entries(SNAKES)) {
+        const p1 = getSnakeCoord(Number(head), cell);
+        const p2 = getSnakeCoord(Number(tail), cell);
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.quadraticCurveTo((p1.x + p2.x)/2 + 20, (p1.y + p2.y)/2 - 20, p2.x, p2.y);
+        ctx.stroke();
+      }
+
+      // Draw Tokens
+      snakePlayers.forEach((p, idx) => {
+        if (p.pos <= 0) return;
+        const c = getSnakeCoord(p.pos, cell);
+        const offsetX = (idx === 0) ? -6 : 6;
+        ctx.beginPath();
+        ctx.arc(c.x + offsetX, c.y, cell * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+      });
+    }
+
+    function getSnakeCoord(sq, cell) {
+      const idx = sq - 1;
+      const rowFromBottom = Math.floor(idx / 10);
+      const row = 9 - rowFromBottom;
+      const col = (rowFromBottom % 2 === 0) ? (idx % 10) : (9 - (idx % 10));
+      return { x: col * cell + cell/2, y: row * cell + cell/2 };
+    }
+
+    async function onSnakeDiceClick() {
+      if (snakeRolling) return;
+      const p = snakePlayers[snakeTurnIdx];
+      if (p.isAI) return;
+      await executeSnakeRoll();
+    }
+
+    async function executeSnakeRoll() {
+      snakeRolling = true;
+      const diceBtn = document.getElementById('snakeDiceBtn');
+      diceBtn.classList.add('rolling');
+      playBeep(350, 'square', 0.15);
+
+      let roll = 1;
+      for (let i = 0; i < 6; i++) {
+        roll = Math.floor(Math.random() * 6) + 1;
+        diceBtn.textContent = roll;
+        await new Promise(r => setTimeout(r, 60));
+      }
+      diceBtn.classList.remove('rolling');
+
+      const p = snakePlayers[snakeTurnIdx];
+      const target = (p.pos === 0) ? roll : p.pos + roll;
+
+      if (target <= 100) {
+        p.pos = target;
+        playBeep(480, 'sine', 0.1);
+
+        if (LADDERS[p.pos]) {
+          p.pos = LADDERS[p.pos];
+          playBeep(620, 'triangle', 0.3);
+          document.getElementById('snakeStatusMsg').textContent = `🎉 ${p.name} climbed a ladder!`;
+        } else if (SNAKES[p.pos]) {
+          p.pos = SNAKES[p.pos];
+          playBeep(220, 'sawtooth', 0.3);
+          document.getElementById('snakeStatusMsg').textContent = `🐍 Ouch! Snake bite!`;
+        }
+      } else {
+        document.getElementById('snakeStatusMsg').textContent = `${p.name} needed exact roll!`;
+      }
+
+      drawSnakeBoard();
+      updateSnakeUI();
+
+      if (p.pos === 100) {
+        triggerVictory(p.name, () => startSnake(snakeVsAI));
+        snakeRolling = false;
+        return;
+      }
+
+      snakeRolling = false;
+      snakeTurnIdx = (snakeTurnIdx + 1) % snakePlayers.length;
+      updateSnakeUI();
+
+      if (snakePlayers[snakeTurnIdx].isAI) {
+        document.getElementById('snakeStatusMsg').textContent = "Bot is rolling dice...";
+        setTimeout(executeSnakeRoll, 800);
+      }
+    }
+
+    /* ========================================================
+       3. LUDO BOARD & ENGINE (CLASSIC & QUICK RUSH)
+    ======================================================== */
+    let ludoPlayers = [];
+    let ludoTurnIdx = 0;
+    let ludoDiceVal = 1;
+    let ludoRolling = false;
+    let ludoHasRolled = false;
+    let ludoIsRush = false;
+    let ludoVsAI = true;
+
+    function startLudo(vsAI, isRush) {
+      ludoVsAI = vsAI;
+      ludoIsRush = isRush;
+      const count = isRush ? 2 : 4;
+      ludoPlayers = [
+        { name: 'Red', color: '#e53935', isAI: false, tokens: Array(count).fill(-1) },
+        { name: 'Green', color: '#43a047', isAI: vsAI, tokens: Array(count).fill(-1) },
+        { name: 'Yellow', color: '#ffb300', isAI: vsAI, tokens: Array(count).fill(-1) },
+        { name: 'Blue', color: '#1e88e5', isAI: vsAI, tokens: Array(count).fill(-1) }
+      ];
+      ludoTurnIdx = 0;
+      ludoRolling = false;
+      ludoHasRolled = false;
+      document.getElementById('ludoModeBadge').textContent = isRush ? 'Quick Rush (2 Tokens)' : 'Classic (4 Tokens)';
+      showView('ludoView');
+      drawLudoBoard();
+      updateLudoUI();
+    }
+
+    function updateLudoUI() {
+      const p = ludoPlayers[ludoTurnIdx];
+      const el = document.getElementById('ludoTurnText');
+      el.textContent = `Turn: ${p.name}`;
+      el.style.color = p.color;
+    }
+
+    function drawLudoBoard() {
+      const canvas = document.getElementById('ludoCanvas');
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      const cell = size / 15;
+
+      ctx.fillStyle = '#fafafa';
+      ctx.fillRect(0, 0, size, size);
+
+      // 4 Bases
+      drawLudoBase(ctx, 0, 0, 6, 6, cell, '#e53935', '#ffcdd2');
+      drawLudoBase(ctx, 9, 0, 6, 6, cell, '#43a047', '#c8e6c9');
+      drawLudoBase(ctx, 9, 9, 6, 6, cell, '#ffb300', '#fff9c4');
+      drawLudoBase(ctx, 0, 9, 6, 6, cell, '#1e88e5', '#bbdefb');
+
+      // Grid paths
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      for (let r = 0; r < 15; r++) {
+        for (let c = 0; c < 15; c++) {
+          if ((r < 6 && c < 6) || (r < 6 && c >= 9) || (r >= 9 && c < 6) || (r >= 9 && c >= 9)) continue;
+          if (r >= 6 && r <= 8 && c >= 6 && c <= 8) continue;
+
+          let bg = '#fff';
+          if (r === 7 && c >= 1 && c <= 5) bg = '#e53935';
+          if (c === 7 && r >= 1 && r <= 5) bg = '#43a047';
+          if (r === 7 && c >= 9 && c <= 13) bg = '#ffb300';
+          if (c === 7 && r >= 9 && r <= 13) bg = '#1e88e5';
+
+          ctx.fillStyle = bg;
+          ctx.fillRect(c * cell, r * cell, cell, cell);
+          ctx.strokeRect(c * cell, r * cell, cell, cell);
+        }
+      }
+
+      // Draw Center Home
+      const cx = 7.5 * cell, cy = 7.5 * cell;
+      ctx.fillStyle = '#e53935';
+      ctx.beginPath(); ctx.moveTo(6*cell, 6*cell); ctx.lineTo(cx, cy); ctx.lineTo(6*cell, 9*cell); ctx.fill();
+      ctx.fillStyle = '#43a047';
+      ctx.beginPath(); ctx.moveTo(6*cell, 6*cell); ctx.lineTo(cx, cy); ctx.lineTo(9*cell, 6*cell); ctx.fill();
+      ctx.fillStyle = '#ffb300';
+      ctx.beginPath(); ctx.moveTo(9*cell, 6*cell); ctx.lineTo(cx, cy); ctx.lineTo(9*cell, 9*cell); ctx.fill();
+      ctx.fillStyle = '#1e88e5';
+      ctx.beginPath(); ctx.moveTo(6*cell, 9*cell); ctx.lineTo(cx, cy); ctx.lineTo(9*cell, 9*cell); ctx.fill();
+
+      // Draw player tokens in base and on board
+      ludoPlayers.forEach((p, pIdx) => {
+        p.tokens.forEach((tStep, tIdx) => {
+          let pos;
+          if (tStep === -1) {
+            // Base slot
+            const baseOffsets = [
+              [{x:2, y:2}, {x:3.5, y:2}, {x:2, y:3.5}, {x:3.5, y:3.5}],       // Red
+              [{x:11, y:2}, {x:12.5, y:2}, {x:11, y:3.5}, {x:12.5, y:3.5}],   // Green
+              [{x:11, y:11}, {x:12.5, y:11}, {x:11, y:12.5}, {x:12.5, y:12.5}],// Yellow
+              [{x:2, y:11}, {x:3.5, y:11}, {x:2, y:12.5}, {x:3.5, y:12.5}]    // Blue
+            ];
+            const slot = baseOffsets[pIdx][tIdx];
+            pos = { x: slot.x * cell, y: slot.y * cell };
+          } else if (tStep >= 56) {
+            pos = { x: cx, y: cy };
+          } else {
+            pos = { x: (6 + (tStep % 3)) * cell + cell/2, y: (6 + Math.floor(tStep / 3)) * cell + cell/2 };
+          }
+
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, cell * 0.38, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#fff';
+          ctx.stroke();
+        });
+      });
+    }
+
+    function drawLudoBase(ctx, c, r, w, h, cell, borderCol, fillCol) {
+      ctx.fillStyle = borderCol;
+      ctx.fillRect(c * cell, r * cell, w * cell, h * cell);
+      ctx.fillStyle = fillCol;
+      ctx.fillRect((c + 0.6) * cell, (r + 0.6) * cell, (w - 1.2) * cell, (h - 1.2) * cell);
+    }
+
+    async function onLudoDiceClick() {
+      if (ludoRolling || ludoHasRolled) return;
+      const p = ludoPlayers[ludoTurnIdx];
+      if (p.isAI) return;
+      await executeLudoRoll();
+    }
+
+    async function executeLudoRoll() {
+      ludoRolling = true;
+      const btn = document.getElementById('ludoDiceBtn');
+      btn.classList.add('rolling');
+      playBeep(400, 'square', 0.15);
+
+      for (let i = 0; i < 6; i++) {
+        ludoDiceVal = Math.floor(Math.random() * 6) + 1;
+        btn.textContent = ludoDiceVal;
+        await new Promise(r => setTimeout(r, 60));
+      }
+      btn.classList.remove('rolling');
+      ludoRolling = false;
+      ludoHasRolled = true;
+
+      const p = ludoPlayers[ludoTurnIdx];
+      document.getElementById('ludoStatusMsg').textContent = `${p.name} rolled a ${ludoDiceVal}!`;
+
+      // Check auto-move or unlock
+      const baseIdx = p.tokens.findIndex(s => s === -1);
+      const activeIdx = p.tokens.findIndex(s => s >= 0 && s < 56);
+
+      if (ludoDiceVal === 6 && baseIdx !== -1) {
+        p.tokens[baseIdx] = 0;
+        playBeep(600, 'triangle', 0.2);
+        document.getElementById('ludoStatusMsg').textContent = `${p.name} unlocked a token!`;
+      } else if (activeIdx !== -1) {
+        p.tokens[activeIdx] = Math.min(56, p.tokens[activeIdx] + ludoDiceVal);
+        playBeep(500, 'sine', 0.1);
+      }
+
+      drawLudoBoard();
+
+      // Check win
+      if (p.tokens.every(s => s >= 56)) {
+        triggerVictory(p.name, () => startLudo(ludoVsAI, ludoIsRush));
+        return;
+      }
+
+      setTimeout(() => {
+        ludoHasRolled = false;
+        if (ludoDiceVal !== 6) {
+          ludoTurnIdx = (ludoTurnIdx + 1) % ludoPlayers.length;
+        }
+        updateLudoUI();
+        if (ludoPlayers[ludoTurnIdx].isAI) {
+          document.getElementById('ludoStatusMsg').textContent = "Bot is rolling...";
+          setTimeout(executeLudoRoll, 700);
+        }
+      }, 700);
+    }
+    // Service Worker & PWA Install
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('installBtn');
+      if (btn) btn.style.display = 'inline-block';
+    });
+
+    function installApp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          deferredPrompt = null;
+          document.getElementById('installBtn').style.display = 'none';
+        });
+      }
+    }
+  </script>
+</body>
+</html>
